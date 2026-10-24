@@ -1,0 +1,17 @@
+{
+  "name": "@vedanshshetti/text-to-html",
+  "version": "1.0.0",
+  "description": "Convert human readable text into clean, styled HTML",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"I dont have tests for this\"",
+    "prepublishOnly": "tsc"
+  },
+  "author": "Vedansh Shetti <vedansh.shetti@gmail.com>",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^5.9.3"
+  },
+  "type": "module"
+}

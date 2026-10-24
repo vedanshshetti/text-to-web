@@ -1,88 +1,96 @@
-function eTitle(input: string) {
-    const headerText = input
-        .trim()
-        .split("title: \"")[1]
-        .split("\"")[0];
-    return({
-        i: headerText.trim().length > 0 ? headerText : "",
-        continue: input.split(`${headerText}\"`)[1]
-    })
-}
+type Extraction = {
+    i: string;
+    continue: string;
+};
 
-function eSubtitle(input: string) {
-    const headerText = input
-        .trim()
-        .split("subtitle: \"")[1]
-        .split("\"")[0];
-    return({
-        i: headerText.trim().length > 0 ? headerText : "",
-        continue: input.split(`${headerText}\"`)[1]
-    })
-}
-
-function eImage(input: string) {
-    const x = input
-        .trim()
-        .split("image: \"")[1]
-        .split("\"")[0];
-    return {
-        i: `<img src="${x}" alt="Image Alt Text">`,
-        continue: input.split(`${x}\"`)[1]
+function extractQuoted(input: string, marker: string): { value: string; rest: string } | undefined {
+    const start = input.indexOf(marker);
+    if (start === -1) {
+        return undefined;
     }
-}   
 
-// eLink was made using GitHub Copilot - GPT-5.6-Luna, only god and/or real software engineers know what this does
-function eLink(input: string) {
-    const start = input.indexOf('link: "') + 'link: "'.length;
-    const textEnd = input.indexOf('"', start);
-    const urlStart = input.indexOf('"', textEnd + 1) + 1;
-    const urlEnd = input.indexOf('"', urlStart);
-    const text = input.slice(start, textEnd);
-    const url = input.slice(urlStart, urlEnd);
-    const tag = `<a href="${url}">${text}</a>`;
-    return {
-        i: tag,
-        continue: input.slice(urlEnd + 1)
+    const valueStart = start + marker.length;
+    const valueEnd = input.indexOf('"', valueStart);
+    if (valueEnd === -1) {
+        return undefined;
     }
+
+    return {
+        value: input.slice(valueStart, valueEnd),
+        rest: input.slice(valueEnd + 1)
+    };
 }
 
-function eCode(input: string) {
-    const x = input
-        .trim()
-        .split("code: \"")[1]
-        .split("\"")[0];
-    return({
-        i: `<span style="font-family: monospace; color: #076300;">${x}</span>`,
-        continue: input.split(`${x}\"`)[1]
-    })
+function eTitle(input: string): Extraction {
+    const result = extractQuoted(input, 'title: "');
+    return {
+        i: result?.value.trim() ?? "",
+        continue: result?.rest ?? input
+    };
 }
 
-function eItalic(input: string) {
-    const x = input
-        .trim()
-        .split("italic: \"")[1]
-        .split("\"")[0];
-    return({
-        i: `<i>${x}</i>`,
-        continue: input.split(`${x}\"`)[1]
-    })
+function eSubtitle(input: string): Extraction {
+    const result = extractQuoted(input, 'subtitle: "');
+    return {
+        i: result?.value.trim() ?? "",
+        continue: result?.rest ?? input
+    };
 }
 
-function eBold(input: string) {
-    const x = input
-        .trim()
-        .split("italic: \"")[1]
-        .split("\"")[0];
-    return({
-        i: `<strong>${x}</strong>`,
-        continue: input.split(`${x}\"`)[1]
-    })
+function eImage(input: string): Extraction {
+    const result = extractQuoted(input, 'image: "');
+    return {
+        i: result ? `<img src="${result.value}" alt="Image Alt Text">` : "",
+        continue: result?.rest ?? input
+    };
 }
 
+function eLink(input: string): Extraction {
+    const text = extractQuoted(input, 'link: "');
+    if (!text) {
+        return { i: "", continue: input };
+    }
 
-export function extract(what: "title" | "subtitle" | "image" | "link" | "code" | "italic" | "bold", input: string): {i: string, continue: string} {
-    try {
-        switch(what) {
+    const url = extractQuoted(text.rest, '"');
+    if (!url) {
+        return { i: "", continue: input };
+    }
+
+    return {
+        i: `<a href="${url.value}">${text.value}</a>`,
+        continue: url.rest
+    };
+}
+
+function eCode(input: string): Extraction {
+    const result = extractQuoted(input, 'code: "');
+    return {
+        i: result ? `<span style="font-family: monospace; color: #076300;">${result.value}</span>` : "",
+        continue: result?.rest ?? input
+    };
+}
+
+function eItalic(input: string): Extraction {
+    const result = extractQuoted(input, 'italic: "');
+    return {
+        i: result ? `<i>${result.value}</i>` : "",
+        continue: result?.rest ?? input
+    };
+}
+
+function eBold(input: string): Extraction {
+    const result = extractQuoted(input, 'bold: "');
+    return {
+        i: result ? `<strong>${result.value}</strong>` : "",
+        continue: result?.rest ?? input
+    };
+}
+
+export function extract(
+    what: "title" | "subtitle" | "image" | "link" | "code" | "italic" | "bold",
+    input: string
+): Extraction {
+    switch (what) {
         case "title":
             return eTitle(input);
         case "subtitle":
@@ -97,17 +105,5 @@ export function extract(what: "title" | "subtitle" | "image" | "link" | "code" |
             return eItalic(input);
         case "bold":
             return eBold(input);
-        default:
-            return {
-                i: "",
-                continue: input
-            }
-        }
-    } catch (e) {
-        console.error(e);
-        return {
-                i: "",
-                continue: input
-            };
     }
 }
