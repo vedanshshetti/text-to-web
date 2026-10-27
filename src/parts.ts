@@ -62,6 +62,14 @@ function eLink(input: string): Extraction {
     };
 }
 
+function eText(input: string): Extraction {
+    const result = extractQuoted(input, 'text: "');
+    return {
+        i: result ? `<p>${result.value.replaceAll("\n", "<br>")}</p>` : "",
+        continue: result?.rest ?? input
+    };
+}
+
 function eCode(input: string): Extraction {
     const result = extractQuoted(input, 'code: "');
     return {
@@ -87,7 +95,7 @@ function eBold(input: string): Extraction {
 }
 
 export function extract(
-    what: "title" | "subtitle" | "image" | "link" | "code" | "italic" | "bold",
+    what: "title" | "subtitle" | "image" | "link" | "code" | "italic" | "bold" | "text",
     input: string
 ): Extraction {
     switch (what) {
@@ -105,5 +113,7 @@ export function extract(
             return eItalic(input);
         case "bold":
             return eBold(input);
+        case "text":
+            return eText(input);
     }
 }
